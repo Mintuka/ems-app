@@ -1,0 +1,229 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+enum Role {
+  admin
+  user
+  guest
+}
+
+enum CompanyRole {
+  Admin
+  Employee
+  Manager
+}
+
+model User {
+  id        String    @id @default(uuid())
+  userID    String    @unique
+  firstName String?
+  lastName  String?
+  image_url String?
+  email     String?   @unique
+  role      Role      @default(guest)
+  Employee  Employee?
+}
+
+model Employee {
+  id          String        @id @default(uuid())
+  user        User          @relation(fields: [userID], references: [id])
+  userID      String        @unique
+  firstName   String
+  lastName    String
+  email       String        @unique
+  phone       String        @unique
+  role        CompanyRole   @default(Employee)
+  position    String?
+  salary      Float
+  onBoarding  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  IBAN        String
+  photo       String?
+  taxid       String?
+  address     String?
+  insurance   String?
+  timekeeping timekeeping[]
+
+  Schedule    Schedule[]
+  Documents   Documents[]
+  Training    Training[]
+  PaySlip     PaySlip[]
+  PaySlipData PaySlipData[]
+  Request     Request[]
+  Teams       Teams?        @relation(fields: [teamsId], references: [id])
+  teamsId     String?
+
+  sent         Message[]      @relation("sender")
+  from         Message[]      @relation("receiver")
+  TeamMessage  TeamMessage[]  @relation("sender")
+  TaskComments TaskComments[]
+}
+
+model Teams {
+  id          String        @id @default(uuid())
+  name        String
+  tasks       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  members     Employee[]
+  TeamMessage TeamMessage[] @relation("receiver")
+  TeamTask    TeamTask[]
+}
+
+model timekeeping {
+  id         String    @id @default(uuid())
+  employee   Employee  @relation(fields: [employeeID], references: [id])
+  employeeID String
+  timeIn     DateTime
+  timeOut    DateTime?
+  verified   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model TeamTask {
+  id           String         @id @default(uuid())
+  team         Teams          @relation(fields: [teamID], references: [id], onDelete: Cascade)
+  teamID       String
+  task         String
+  description  String?
+  done         Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  deadline     DateTime
+  TaskComments TaskComments[]
+}
+
+model TaskComments {
+  id         String   @id @default(uuid())
+  task       TeamTask @relation(fields: [taskID], references: [id], onDelete: Cascade)
+  taskID     String
+  employee   Employee @relation(fields: [employeeID], references: [id])
+  employeeID String
+  comment    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Schedule {
+  id         String   @id @default(uuid())
+  employee   Employee @relation(fields: [employeeID], references: [id])
+  employeeID String
+  date       DateTime
+  timeIn     DateTime
+  timeOut    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Documents {
+  id         String   @id @default(uuid())
+  employee   Employee @relation(fields: [employeeID], references: [id])
+  employeeID String
+  type       Document
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  localFile  String
+}
+
+enum Document {
+  ID
+  Passport
+  Visa
+  Insurance
+  Health
+  Contract
+  Certificate
+  Other
+}
+
+model Training {
+  id         String   @id @default(uuid())
+  employee   Employee @relation(fields: [employeeID], references: [id])
+  employeeID String
+  type       String
+  date       DateTime
+  time       DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  localFile  String
+}
+
+model PaySlip {
+  id         String   @id @default(uuid())
+  employee   Employee @relation(fields: [employeeID], references: [id])
+  employeeID String
+  month      DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  localFile  String
+}
+
+model PaySlipData {
+  id         String   @id @default(uuid())
+  employee   Employee @relation(fields: [employeeID], references: [id])
+  employeeID String
+  hours      Float
+  rate       Float
+  deduction  Float
+  IBAN       String
+  month      DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Request {
+  id         String      @id @default(uuid())
+  employee   Employee    @relation(fields: [employeeID], references: [id])
+  employeeID String
+  type       RequestType
+  approved   Boolean     @default(false)
+  message    String
+  date       DateTime
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+enum RequestType {
+  Documents
+  Vacation
+  Leave
+  Training
+  Raise
+  Department
+  Other
+  Sick
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  from      Employee @relation("sender", fields: [fromID], references: [id])
+  fromID    String
+  to        Employee @relation("receiver", fields: [toID], references: [id])
+  toID      String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TeamMessage {
+  id        String   @id @default(uuid())
+  from      Employee @relation("sender", fields: [fromID], references: [id])
+  fromID    String
+  to        Teams    @relation("receiver", fields: [toID], references: [id])
+  toID      String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
