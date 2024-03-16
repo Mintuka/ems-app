@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     //   throw new Error("Invalid token", { cause: "Invalid token" });
     // }
     // console.log(req)
-    const payload = (await req.json()) as UserWebhookEvent;
+    const payload = (await req.json()) as any;
     // console.log(payload)
     // if (payload.type !== "user.created") {
     //   console.log("My payload",payload)
@@ -27,11 +27,11 @@ export async function POST(req: Request) {
     // }
     const create = await prismaClient.user.create({
       data: {
-        userID: payload.data.id,
-        firstName: payload.data.first_name,
-        lastName: payload.data.last_name,
-        email: payload.data.email_addresses[0].email_address,
-        image_url: payload.data.profile_image_url,
+        userID: payload.data?.id || '',
+        firstName: payload.data?.first_name || '',
+        lastName: payload.data?.last_name || '',
+        email: payload.data?.email_addresses[0].email_address || '',
+        image_url: payload.data?.profile_image_url || '',
       },
     });
     console.log(create)
